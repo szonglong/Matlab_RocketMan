@@ -19,6 +19,8 @@ m0=407000; m1=15500;
 vt0=460; st0=0;
 tau = 0.1; %interval
 maxstep = 6000; % no. of iterations
+alpha=0; 
+at=0;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %assigning variables to init values
@@ -29,24 +31,27 @@ for istep=1:maxstep
     t = (istep-1)*tau; 
     m=mf1+mf2+md2;
     rho=(1.225*exp(-(z)/8780));
-    at=(-vt0)*(RE/(RE+z)^2)*v;
+    
     aFd=(0.5*0.82*rho*A*v^2)/m;
     aFi1=ve1*(dm1/tau)/m;
     aFi2=ve2*(dm2/tau)/m;
     aFg=G*ME/((z+RE)^2);
     aFc=vt^2/(RE+z);
-    theta=atan(vt/v);
     
+    theta=atan2(vt-vt0,v);
+    phi=theta+alpha;
+    
+    aw=(vt0)*(RE/(RE+z)^2)*v;
     
     xplot(istep) = t;
-    yplot(istep) = z;
-%     yplot(istep) = a/9.81;
-%     yplot(istep) = 0.5*rho*v^2;
+    yplot(istep) = at;
    
 
     % while mf > 0
     if( mf1 > 0 )
-        a_prime = aFi1 + aFc - aFg - aFd;
+        iter=istep
+        a_prime = aFi1*cos(phi) + aFc - aFg - aFd*cos(theta);
+        at= -aw % +aFi1*sin(phi)% - aFd*sin(theta);
         if (a_prime>0)
             a = a_prime;
         else
@@ -55,10 +60,12 @@ for istep=1:maxstep
         mf1 = mf1-dm1;
     else
         if( mf2 > 0 )
-            a = aFi2 + aFc - aFg - aFd;
+            alpha=t*0.0
+            a = aFi2*cos(phi) + aFc - aFg - aFd*cos(theta);
             mf2 = mf2-dm2;
+            at= -aw % +aFi2*sin(phi) %- aFd*sin(theta) ;
         else
-            a= -aFg - aFd + aFc;
+            a= aFc -aFg - aFd*cos(theta);
         end
     end
     v = v+a*tau;
@@ -70,12 +77,6 @@ end
 
 plot1=plot(xplot,yplot,'-');
 xlabel('t'); ylabel('z');
-
-
-
-
-
-
 
 
 
@@ -92,4 +93,9 @@ xlabel('t'); ylabel('z');
 % 2.1 a_t
 % 2.2 make single loop
 % 2.3 consolidated variables
+% 2.4 split into radial and tangential
+
+%to do:
+% alpha(t) st vr = 0, vt = vreq, z = zreq; -> single variable v3
+% v4 -> Powell
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
