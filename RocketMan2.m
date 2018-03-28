@@ -9,14 +9,14 @@
 ve1=2500; ve2=3550;
 dm1=251; dm2=4.1; md1=20000; md2=4500;
 G=6.67*10^-11; RE=6371000; ME=5.972*10^24;
-A= 113;
+A= 113; atc=9;
 
 
 %initialise values at t=0
 z0=0;
 v0=0;
 m0=407000; m1=15500;
-vt0=460; st0=0
+vt0=460; st0=0;
 tau = 0.1; %interval
 maxstep = 6000; % no. of iterations
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -30,11 +30,11 @@ for istep=1:maxstep
     t = (istep-1)*tau; 
     m=mf1+md1;
     rho=(1.225*exp(-(z)/8780));
-    vt=vt0+(RE/(RE+z))
+    at=(-vt0)*(RE/(RE+z)^2)*v;
     
     
     xplot(istep) = t;
-    yplot(istep) = z;
+    yplot(istep) = st;
 %     yplot(istep) = a/9.81;
 %     yplot(istep) = 0.5*rho*v^2;
    
@@ -47,12 +47,13 @@ for istep=1:maxstep
         else
             a = 0;
         end
-        mf1 = mf1-dm1
+        mf1 = mf1-dm1;
     else
         break
     end
     v = v+a*tau;
     z = z+v*tau;
+    vt = vt + at*tau;
     st = st+vt*tau;
 end
 
@@ -60,8 +61,10 @@ for istep=iter:maxstep
     t = (istep-1)*tau; 
     m=mf2+md2;
     rho=(1.225*exp(-(z)/8780));
+    at=(-vt0)*(RE/(RE+z)^2)*v + atc;
+    
     xplot(istep) = t;
-    yplot(istep) = z;
+    yplot(istep) = st;
 %     yplot(istep) = a/9.81;
 %     yplot(istep) = 0.5*rho*v^2;
    
@@ -69,13 +72,13 @@ for istep=iter:maxstep
     if( mf2 > 0 )
         a = ve2*(dm2/tau)/m + vt^2/(RE+z) - G*ME/((z+RE)^2) - (0.5*0.82*rho*A*v^2)/m;
         mf2 = mf2-dm2;
-        f=istep
     else
         a= -G*ME/((z+RE)^2) - (0.5*0.82*rho*A*v^2)/m + vt^2/(RE+z);
     end
     v = v+a*tau;
     z = z+v*tau;
-    
+    vt = vt + at*tau;
+    st = st+vt*tau;
 end
 
 
@@ -103,4 +106,5 @@ xlabel('t'); ylabel('z');
 % 1.5 Added in stage 2
 
 % 2.0 Make 2D: a_r, v_t
+% 2.1 a_t
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
