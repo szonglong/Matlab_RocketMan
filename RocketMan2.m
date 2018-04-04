@@ -21,7 +21,7 @@ tau = 0.1; %interval
 maxstep = 6000; % no. of iterations
 alpha=0; %angle of thrust vectoring
 at=0; %initial tangential velocity
-gamma=0.5;
+gamma=2.7;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %assigning variables to init values
@@ -45,15 +45,15 @@ for istep=1:maxstep
     
     
     xplot(istep) = t;
-    yplot(istep) = st;
+    yplot(istep) = v;
    
 
     % while mf > 0
     if( mf1 > 0 )
         iter=istep;
-        a_prime = aFi1*cos(phi) + aFc - aFg - aFd*cos(theta);
+        a_prime = aFi1 + aFc - aFg - aFd;
         aw= -(vt)*(1/(RE+z))*v -(vt)*dm1/m;
-        at= aw;% +aFi1*sin(gamma);% - aFd*sin(theta);
+        at= aw+ aFi1;
         if (a_prime>0)
             a = a_prime;
         else
@@ -63,12 +63,12 @@ for istep=1:maxstep
     else
         if( mf2 > 0 )
             alpha=t*0.03;
-            a = aFi2*cos(phi) + aFc - aFg - aFd*cos(theta);
+            a = aFi2*cos(gamma) + aFc - aFg - aFd;
             mf2 = mf2-dm2;
             aw=-(vt)*(1/(RE+z))*v -(vt)*dm2/m;
-            at= aw;% +aFi2*sin(gamma) %- aFd*sin(theta) ;
+            at= aw + aFi2*sin(gamma);
         else
-            a= aFc -aFg - aFd*cos(theta);
+            a= aFc -aFg - aFd;
         end
     end
     v = v+a*tau;
@@ -99,6 +99,8 @@ xlabel('t'); ylabel('z');
 % 2.4 split into radial and tangential
 % 2.5 realised that theta is problematic, try simple first/  Last one with
 % (problematic) theta
+% 2.6 Simplified version - thrust indep of angle. Single gamma on stage 2.
+% Need to solve gamma st v=0 at end of burn
 
 %to do:
 % alpha(t) st vr = 0, vt = vreq, z = zreq; -> single variable v3
