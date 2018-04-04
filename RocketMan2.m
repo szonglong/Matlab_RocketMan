@@ -6,21 +6,22 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %static variables
-ve1=2500; ve2=3550;
-dm1=251; dm2=4.1; md1=20000; md2=4500;
-G=6.67*10^-11; RE=6371000; ME=5.972*10^24;
-A= 113; atc=9;
+ve1=2500; ve2=3550;%exhaust velocity
+dm1=251; dm2=4.1; md2=4500; %md1=20000; %dry mass and mass flow rate
+G=6.67*10^-11; RE=6371000; ME=5.972*10^24; %constants
+A= 113; %area of rocket 
 
 
 %initialise values at t=0
-z0=0;
-v0=0;
-m0=407000; m1=15500;
-vt0=460; st0=0;
+z0=0; %height above earth
+v0=0; %intitial radial velocity
+m0=407000; m1=15500; %initial fuel masses
+vt0=460; st0=0; %tangential components
 tau = 0.1; %interval
 maxstep = 6000; % no. of iterations
-alpha=0; 
-at=0;
+alpha=0; %angle of thrust vectoring
+at=0; %initial tangential velocity
+gamma=0.5;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %assigning variables to init values
@@ -29,29 +30,30 @@ z=z0; v=v0; mf1=m0; a=0; mf2=m1; vt=vt0; st=st0;
 
 for istep=1:maxstep
     t = (istep-1)*tau; 
-    m=mf1+mf2+md2;
-    rho=(1.225*exp(-(z)/8780));
+    m=mf1+mf2+md2; %total mass
+    rho=(1.225*exp(-(z)/8780)); %density function
     
-    aFd=(0.5*0.82*rho*A*v^2)/m;
-    aFi1=ve1*(dm1/tau)/m;
-    aFi2=ve2*(dm2/tau)/m;
-    aFg=G*ME/((z+RE)^2);
-    aFc=vt^2/(RE+z);
+    aFd=(0.5*0.82*rho*A*v^2)/m; %magnitude of frictional acceleration
+    aFi1=ve1*(dm1/tau)/m; %magnitude of stage 1 thrust acceleration
+    aFi2=ve2*(dm2/tau)/m; %magnitude of stage 2 thrust acceleration
+    aFg=G*ME/((z+RE)^2); %magnitude of gravitational acceleration
+    aFc=vt^2/(RE+z); %effective acceleration due to required centripetal force
     
-    theta=atan2(vt-vt0,v);
-    phi=theta+alpha;
+    theta=atan2(vt-vt0,v); %angle of rocket
+    phi=theta+alpha; %angle of thrust vector
     
-    aw=(vt0)*(RE/(RE+z)^2)*v;
+    
     
     xplot(istep) = t;
-    yplot(istep) = at;
+    yplot(istep) = st;
    
 
     % while mf > 0
     if( mf1 > 0 )
-        iter=istep
+        iter=istep;
         a_prime = aFi1*cos(phi) + aFc - aFg - aFd*cos(theta);
-        at= -aw % +aFi1*sin(phi)% - aFd*sin(theta);
+        aw= -(vt)*(1/(RE+z))*v -(vt)*dm1/m;
+        at= aw;% +aFi1*sin(gamma);% - aFd*sin(theta);
         if (a_prime>0)
             a = a_prime;
         else
@@ -60,10 +62,11 @@ for istep=1:maxstep
         mf1 = mf1-dm1;
     else
         if( mf2 > 0 )
-            alpha=t*0.0
+            alpha=t*0.03;
             a = aFi2*cos(phi) + aFc - aFg - aFd*cos(theta);
             mf2 = mf2-dm2;
-            at= -aw % +aFi2*sin(phi) %- aFd*sin(theta) ;
+            aw=-(vt)*(1/(RE+z))*v -(vt)*dm2/m;
+            at= aw;% +aFi2*sin(gamma) %- aFd*sin(theta) ;
         else
             a= aFc -aFg - aFd*cos(theta);
         end
@@ -94,6 +97,8 @@ xlabel('t'); ylabel('z');
 % 2.2 make single loop
 % 2.3 consolidated variables
 % 2.4 split into radial and tangential
+% 2.5 realised that theta is problematic, try simple first/  Last one with
+% (problematic) theta
 
 %to do:
 % alpha(t) st vr = 0, vt = vreq, z = zreq; -> single variable v3
