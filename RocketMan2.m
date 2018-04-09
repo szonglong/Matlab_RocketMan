@@ -6,7 +6,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %static variables
-ve1=2500; ve2=3550;%exhaust velocity
+ve1=2500; ve2=3550;%3550;%exhaust velocity
 dm1=251; dm2=4.1; md2=4500; %md1=20000; %dry mass and mass flow rate
 G=6.67*10^-11; RE=6371000; ME=5.972*10^24; %constants
 A= 113; %area of rocket 
@@ -14,71 +14,74 @@ A= 113; %area of rocket
 
 %initialise values at t=0
 z0=0; %height above earth
-v0=0; %intitial radial velocity
+vz0=0; %intitial radial velocity
+vt0=0; %initial tangential velocity
+vrt0=0; %initial rocket tangential velocity
 m0=407000; m1=15500; %initial fuel masses
-vt0=460; st0=0; %tangential components
+vw0=460; st0=0; %tangential components
 tau = 0.1; %interval
-maxstep = 6000; % no. of iterations
+maxstep = 15000; % no. of iterations
 alpha=0; %angle of thrust vectoring
 at=0; %initial tangential velocity
-gamma=2.7;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %assigning variables to init values
-z=z0; v=v0; mf1=m0; a=0; mf2=m1; vt=vt0; st=st0;
+z=z0; vz=vz0; mf1=m0; az=0; mf2=m1; st=st0; vt=vt0; vrt=vrt0;
 
+%v2 "hand of God" theta
+theta=2.0;
 
 for istep=1:maxstep
     t = (istep-1)*tau; 
     m=mf1+mf2+md2; %total mass
     rho=(1.225*exp(-(z)/8780)); %density function
+    vreq = sqrt(G*ME/(RE+z));
     
-    aFd=(0.5*0.82*rho*A*v^2)/m; %magnitude of frictional acceleration
+    aFd=(0.5*0.82*rho*A*(vz^2+(vt-vw0*(RE/(RE+z)))^2))/m; %magnitude of frictional acceleration
     aFi1=ve1*(dm1/tau)/m; %magnitude of stage 1 thrust acceleration
     aFi2=ve2*(dm2/tau)/m; %magnitude of stage 2 thrust acceleration
     aFg=G*ME/((z+RE)^2); %magnitude of gravitational acceleration
-    aFc=vt^2/(RE+z); %effective acceleration due to required centripetal force
-    
-    theta=atan2(vt-vt0,v); %angle of rocket
-    phi=theta+alpha; %angle of thrust vector
-    
-    
+    aFc=(vt+vw0)^2/(RE+z); %effective acceleration due to required centripetal force
     
     xplot(istep) = t;
-    yplot(istep) = v;
+    yplot(istep) = vz;
+    yplot2(istep)= vt-vreq;
    
 
-    % while mf > 0
-    if( mf1 > 0 )
+    % stage 1
+    if( mf1 > 0 ) %while there is fuel in stage 1
         iter=istep;
         a_prime = aFi1 + aFc - aFg - aFd;
-        aw= -(vt)*(1/(RE+z))*v -(vt)*dm1/m;
-        at= aw+ aFi1;
-        if (a_prime>0)
-            a = a_prime;
+        art= 0;
+        if (a_prime>0) %if upward force > downward force
+            az = a_prime;
         else
-            a = 0;
+            az = 0;
         end
         mf1 = mf1-dm1;
     else
         if( mf2 > 0 )
-            alpha=t*0.03;
-            a = aFi2*cos(gamma) + aFc - aFg - aFd;
+            az = aFi2*cos(theta) + aFc - aFg - aFd;
             mf2 = mf2-dm2;
-            aw=-(vt)*(1/(RE+z))*v -(vt)*dm2/m;
-            at= aw + aFi2*sin(gamma);
+            art = aFi2*sin(theta) - aFd*sin(theta);
         else
-            a= aFc -aFg - aFd;
+            %break %when fuel runs out, cut the loop
+            az= aFc -aFg - aFd;
+            art=- aFd*sin(theta);
         end
     end
-    v = v+a*tau;
-    z = z+v*tau;
-    vt = vt + at*tau;
+    
+    vz = vz+az*tau;
+    z = z+vz*tau;
+    
+    vw = (vw0*RE)/((RE+z));
+    vrt= vrt + art*tau;
+    vt = vrt + vw;
     st = st+vt*tau;
 end
 
 
-plot1=plot(xplot,yplot,'-');
+plot1=plot(xplot,yplot,'-',xplot,yplot2,'-');
 xlabel('t'); ylabel('z');
 
 
@@ -101,6 +104,9 @@ xlabel('t'); ylabel('z');
 % (problematic) theta
 % 2.6 Simplified version - thrust indep of angle. Single gamma on stage 2.
 % Need to solve gamma st v=0 at end of burn
+% 2.7 vt is earth moving under rocket.. all equations and variables
+% redefined
+% 2.8 remove aw, explicit vw
 
 %to do:
 % alpha(t) st vr = 0, vt = vreq, z = zreq; -> single variable v3
