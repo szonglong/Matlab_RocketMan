@@ -4,19 +4,28 @@
 % 
 % NOTE: clear variables before each run
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-array=zeros;
-index = 1;
-for i=1.6:0.1:2.1
-    array(index,:)=fun(i);
-    index = index +1;
-    i
+
+
+%generating arrays
+%range insert
+theta_range=1.9:0.02:2.1
+ve2_range=4400:100:4800
+array=zeros();
+index2 = 1;
+for i=theta_range
+    index = 1;
+    for j = ve2_range
+        array(index2,index)=fun(i,j);
+        index = index +1;
+    end
+    index2 = index2 + 1
 end
 array
 
-function f=fun(theta)
+function f=fun(theta,ve2)
 %static variables
-ve1=2500; ve2=4600;%3550;%exhaust velocity
-dm1=251; dm2=4.1; md2=4500; %md1=20000; %dry mass and mass flow rate
+ve1=2500; %ve2=4700;%3550;%exhaust velocity
+dm1=251; dm2=4.1; md2=4000; %md1=20000; %dry mass and mass flow rate
 G=6.67*10^-11; RE=6371000; ME=5.972*10^24; %constants
 A= 113; %area of rocket 
 
@@ -91,7 +100,7 @@ end
 
 % plot1=plot(xplot,yplot,'-',xplot,yplot2,'-');
 % xlabel('t'); ylabel('z');
-f=vz;
+f=(vt+vw0)-vreq;
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -117,6 +126,7 @@ end
 % 2.8 remove aw, explicit vw
 % 2.9 revised some expressions, should be a basic correct one
 % 2.10 returns array of vz for range of theta
+% 2.11 returns matrix of vz for range of theta and ve2
 
 %to do:
 % alpha(t) st vr = 0, vt = vreq, z = zreq; -> single variable v3
