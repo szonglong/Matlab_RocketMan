@@ -4,15 +4,19 @@
 % 
 % NOTE: clear variables before each run
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
+format long
 %%range insert
 theta_range=2.025:1E-4:2.026;%2.02574;
-ve2_range=4619:1:4626;%4622;
+ve2_range=4619:2:4626;%4622;
 TOL=1E-2;
 
 %generating arrays
 grandarrayz=zeros(length(theta_range),length(ve2_range));
 grandarrayt=zeros(length(theta_range),length(ve2_range));
+xxzrange=zeros();
+xxtrange=zeros();
+yyzrange=zeros();
+yytrange=zeros();
 
 for mode=["vz" "vt"]
 array=zeros();
@@ -40,10 +44,95 @@ index2 = 1;
         end
         index2 = index2 + 1;
     end
-grandarrayz
-grandarrayt    
+grandarrayz;
+grandarrayt;    
 end
 
+%point generator
+index2 = 1; 
+xxzindex = 1;
+yyzindex = 1;
+for i=ve2_range
+    index = 1;
+        for j = theta_range
+            if grandarrayz(index,index2)==1
+                xxzrange(xxzindex,:) = ve2_range(index2);
+                xxzindex = xxzindex + 1;
+                yyzrange(yyzindex,:) = theta_range(index);
+                yyzindex = yyzindex + 1;
+                break
+            end
+            index = index + 1;
+        end
+    index2=index2 + 1;
+end
+xxtindex = 1;
+yytindex = 1;
+index2 = 1; 
+for i=ve2_range
+    index = 1;
+        for j = theta_range
+            if grandarrayt(index,index2)==1
+                xxtrange(xxtindex,:) = ve2_range(index2);
+                xxtindex = xxtindex + 1;
+                yytrange(yytindex,:) = theta_range(index);
+                yytindex = yytindex + 1;
+                break
+            end
+            index = index + 1;
+        end
+    index2=index2 + 1;
+end
+% xxzrange
+% yyzrange
+% xxtrange
+% yytrange
+global lt lz
+lt = lagranp(xxtrange,yytrange);
+lz = lagranp(xxzrange,yyzrange);
+
+% functomin=dif_poly_coeff(lt,lz);
+% rangey_tomin=polyval(functomin,ve2_range);
+Fit_and_solve()
+
+function ans=Fit_and_solve()
+    format long
+    TOL=1e-8;
+    Error=1e10;
+    Left=4619; Right=4626; % Initialization of variables
+
+    fLeft = f2(Left); fRight = f2(Right);
+    while (Error>TOL)
+        Middle = (Left+Right)/2; fMiddle = f2(Middle);
+        if ( fLeft * fMiddle <= 0 )
+            Right=Middle; fRight=fMiddle;
+        else
+            Left=Middle; fLeft=fMiddle;
+        end
+        Error=abs( (Right-Left)/Middle );
+    end
+    ans=Middle;
+end
+
+
+function f=f2(x)
+    global lt lz
+    f=polyval(dif_poly_coeff(lt,lz),x)
+end
+
+function coeff_diff = dif_poly_coeff(x1, x2)
+    x1_order = length(x1);
+    x2_order = length(x2);
+    if x1_order > x2_order
+         max_order = size(x1);
+    else
+         max_order = size(x2);
+    end
+    new_x1 = padarray(x1,max_order-size(x1),0,'pre');
+    new_x2 = padarray(x2,max_order-size(x2),0,'pre');
+    coeff_diff = new_x1 - new_x2;
+    return
+end
 
 function f=fun(theta,ve2,mode)
     %static variables
@@ -131,6 +220,19 @@ function f=fun(theta,ve2,mode)
     end
 end
 
+function l = lagranp(x,y)
+    %Input : x = [x1 ... xN], y = [y1 ... yN]
+    %Output: l = Lagrange polynomial coefficients of degree N-1
+    l = 0;
+    for m = 1:length(x)
+        P = 1;
+        for k = 1:length(x)
+            if k ~= m, P = conv(P,[1 -x(k)])/(x(m)-x(k)); end
+        end
+        L(m,:) = P; %cardinal function
+        l = l + y(m)*P; %Lagrange polynomial
+    end
+end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Changelog:
 % 1.0 Initialise program. Basic acceleration
@@ -157,5 +259,8 @@ end
 % 2.11 returns matrix of vz for range of theta and ve2
 
 % 3.0.0 band comparison method (brute force): forming grandarrays
+% 3.0.1 point generator
+% 3.0.2 interpolation and root solving for one example
+
 % v4 -> Powell
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
