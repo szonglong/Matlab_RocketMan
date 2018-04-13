@@ -1,99 +1,91 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % RocketMan! 
 % Describes the trajectory of a rocket shot vertically upward
+% V2 is a one parameter solver for 
 % 
 % NOTE: clear variables before each run
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 format long
-%%range insert
-theta_range=2.025:1E-4:2.026;%2.02574;
-ve2_range=4619:2:4626;%4622;
-TOL=1E-2;
 
-%generating arrays
-grandarrayz=zeros(length(theta_range),length(ve2_range));
-grandarrayt=zeros(length(theta_range),length(ve2_range));
-xxzrange=zeros();
-xxtrange=zeros();
-yyzrange=zeros();
-yytrange=zeros();
 
-for mode=["vz" "vt"]
-array=zeros();
-index2 = 1;    
-    for i=ve2_range
-        index = 1;
-        for j = theta_range
-            array(index,index2)=fun(j,i,mode);
-            if index>1
-                if array(index,index2)*array(index-1,index2) < 0
-                    if mode == "vz"
-                        grandarrayz(index,index2)=grandarrayz(index,index2)+1;
-                        grandarrayz(index-1,index2)=grandarrayz(index-1,index2)+1;
-                        break
-                    end
-                    if mode == "vt"
-                        grandarrayt(index,index2)=grandarrayt(index,index2)+1;
-                        grandarrayt(index-1,index2)=grandarrayt(index-1,index2)+1;
-                        break
+% Init %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+init_theta_range = 1.5:0.1:2.6;
+init_ve2_range = 4400:200:5400;
+
+init_theta_fat=max(init_theta_range)-min(init_theta_range);
+init_ve2_fat=max(init_ve2_range)-min(init_ve2_range);
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+tiny_count = 0;
+
+theta_range=init_theta_range;%2.02574;
+ve2_range=init_ve2_range;%4622;
+theta_fat=init_theta_fat;
+ve2_fat=init_ve2_fat;
+
+
+while tiny_count < 3
+    theta_fat=max(theta_range)-min(theta_range);
+    ve2_fat=max(ve2_range)-min(ve2_range);
+
+
+    %generating arrays
+    xxzrange=zeros();
+    xxtrange=zeros();
+    yyzrange=zeros();
+    yytrange=zeros();
+
+    xxzindex = 1; yyzindex = 1; xxtindex = 1; yytindex = 1;
+
+    for mode=["vz" "vt"]
+    array=zeros();
+    index2 = 1;    
+        for i=ve2_range
+            index = 1;
+            for j = theta_range
+                array(index,index2)=fun(j,i,mode);
+                if index>1
+                    if array(index,index2)*array(index-1,index2) < 0
+                        if mode == "vz"
+                            xxzrange(xxzindex,:) = i;
+                            xxzindex = xxzindex + 1;
+                            yyzrange(yyzindex,:) = j;
+                            yyzindex = yyzindex + 1;
+                            break
+                        end
+                        if mode == "vt"
+                            xxtrange(xxtindex,:) = i;
+                            xxtindex = xxtindex + 1;
+                            yytrange(yytindex,:) = j;
+                            yytindex = yytindex + 1;
+
+                            break
+                        end
                     end
                 end
-            end
-            index = index +1;
+                index = index +1;
 
+            end
+            index2 = index2 + 1;
         end
-        index2 = index2 + 1;
+
     end
-grandarrayz;
-grandarrayt;    
+
+
+    global lt lz
+    lt = lagranp(xxtrange,yytrange);
+    lz = lagranp(xxzrange,yyzrange);
+
+    new_ve2 = Fit_and_solve();
+    new_theta = polyval(lt, new_ve2)
+    theta_range = (new_theta-0.1*theta_fat):(theta_fat/20):(new_theta+0.1*theta_fat)
+    ve2_range = (new_ve2-0.1*ve2_fat):(ve2_fat/20):(new_ve2+0.1*ve2_fat)
+    
+    tiny_count = tiny_count + 1;
 end
 
-%point generator
-index2 = 1; 
-xxzindex = 1;
-yyzindex = 1;
-for i=ve2_range
-    index = 1;
-        for j = theta_range
-            if grandarrayz(index,index2)==1
-                xxzrange(xxzindex,:) = ve2_range(index2);
-                xxzindex = xxzindex + 1;
-                yyzrange(yyzindex,:) = theta_range(index);
-                yyzindex = yyzindex + 1;
-                break
-            end
-            index = index + 1;
-        end
-    index2=index2 + 1;
-end
-xxtindex = 1;
-yytindex = 1;
-index2 = 1; 
-for i=ve2_range
-    index = 1;
-        for j = theta_range
-            if grandarrayt(index,index2)==1
-                xxtrange(xxtindex,:) = ve2_range(index2);
-                xxtindex = xxtindex + 1;
-                yytrange(yytindex,:) = theta_range(index);
-                yytindex = yytindex + 1;
-                break
-            end
-            index = index + 1;
-        end
-    index2=index2 + 1;
-end
-% xxzrange
-% yyzrange
-% xxtrange
-% yytrange
-global lt lz
-lt = lagranp(xxtrange,yytrange);
-lz = lagranp(xxzrange,yyzrange);
 
-% functomin=dif_poly_coeff(lt,lz);
-% rangey_tomin=polyval(functomin,ve2_range);
-Fit_and_solve()
 
 function ans=Fit_and_solve()
     format long
@@ -114,10 +106,9 @@ function ans=Fit_and_solve()
     ans=Middle;
 end
 
-
 function f=f2(x)
     global lt lz
-    f=polyval(dif_poly_coeff(lt,lz),x)
+    f=polyval(dif_poly_coeff(lt,lz),x);
 end
 
 function coeff_diff = dif_poly_coeff(x1, x2)
@@ -150,16 +141,13 @@ function f=fun(theta,ve2,mode)
     m0=407000; m1=15500; %initial fuel masses
     vw0=460; st0=0; %tangential components
     tau = 0.1; %interval
-    maxstep = 24000; % no. of iterations
+    maxstep = 8000; % no. of iterations
     alpha=0; %angle of thrust vectoring
     at=0; %initial tangential velocity
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
     %assigning variables to init values
     z=z0; vz=vz0; mf1=m0; az=0; mf2=m1; st=st0; vt=vt0; vrt=vrt0;
-
-    %v2 "hand of God" theta
-    %theta=2.039239112185;
 
     for istep=1:maxstep
         t = (istep-1)*tau; 
@@ -172,10 +160,10 @@ function f=fun(theta,ve2,mode)
         aFi2=ve2*(dm2/tau)/m; %magnitude of stage 2 thrust acceleration
         aFg=G*ME/((z+RE)^2); %magnitude of gravitational acceleration
         aFc=(vt+vw0)^2/(RE+z); %effective acceleration due to required centripetal force
-
-        xplot(istep) = t;
-        yplot(istep) = (vt+vw0)-vreq;
-        yplot2(istep)= vz;%(vt+vw0)-vreq;
+% 
+%         xplot(istep) = t;
+%         yplot(istep) = (vt+vw0)-vreq;
+%         yplot2(istep)= vz;%(vt+vw0)-vreq;
 
 
         % stage 1
@@ -194,9 +182,9 @@ function f=fun(theta,ve2,mode)
                 mf2 = mf2-dm2;
                 art = aFi2*sin(theta) - aFd*sin(theta);
             else
-                break %when fuel runs out, cut the loop
-    %             az=  aFc -aFg - aFd;
-    %             art=- aFd*sin(theta);
+%                 break %when fuel runs out, cut the loop
+                az=  aFc -aFg - aFd;
+                art=- aFd*sin(theta);
             end
         end
 
@@ -261,6 +249,8 @@ end
 % 3.0.0 band comparison method (brute force): forming grandarrays
 % 3.0.1 point generator
 % 3.0.2 interpolation and root solving for one example
+% 3.0.3 arranging to neater
+% 3.0.4 2 variable solver to get required vr and vt
 
 % v4 -> Powell
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
