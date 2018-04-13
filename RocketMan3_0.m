@@ -25,7 +25,7 @@ theta_fat=init_theta_fat;
 ve2_fat=init_ve2_fat;
 
 
-while tiny_count < 3
+while tiny_count < 10
     theta_fat=max(theta_range)-min(theta_range);
     ve2_fat=max(ve2_range)-min(ve2_range);
 
@@ -77,10 +77,14 @@ while tiny_count < 3
     lt = lagranp(xxtrange,yytrange);
     lz = lagranp(xxzrange,yyzrange);
 
-    new_ve2 = Fit_and_solve();
-    new_theta = polyval(lt, new_ve2)
-    theta_range = (new_theta-0.1*theta_fat):(theta_fat/20):(new_theta+0.1*theta_fat)
-    ve2_range = (new_ve2-0.1*ve2_fat):(ve2_fat/20):(new_ve2+0.1*ve2_fat)
+    new_ve2 = Fit_and_solve()
+    if 1.5 < polyval(lt, new_ve2) && polyval(lt, new_ve2) < 3.14
+        new_theta = polyval(lt, new_ve2)
+        theta_range = (new_theta-0.1*theta_fat):(theta_fat/20):(new_theta+0.1*theta_fat);
+    else
+        break
+    end
+    ve2_range = (new_ve2-0.1*ve2_fat):(ve2_fat/20):(new_ve2+0.1*ve2_fat);
     
     tiny_count = tiny_count + 1;
 end
@@ -251,6 +255,7 @@ end
 % 3.0.2 interpolation and root solving for one example
 % 3.0.3 arranging to neater
 % 3.0.4 2 variable solver to get required vr and vt
+% 3.0.5 Optimised solver fpr 2 variable
 
 % v4 -> Powell
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
